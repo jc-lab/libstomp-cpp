@@ -31,7 +31,10 @@ namespace stomp {
 			static const std::string CONNECT;
 			static const std::string CONNECTED;
 			static const std::string SUBSCRIBE;
+			static const std::string UNSUBSCRIBE;
+			static const std::string ABORT;
 			static const std::string MESSAGE;
+			static const std::string SEND;
 		};
 
 		struct Headers {

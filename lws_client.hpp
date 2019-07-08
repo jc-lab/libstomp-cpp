@@ -17,6 +17,7 @@
 #include <deque>
 #include <memory>
 #include <mutex>
+#include <chrono>
 
 #include "frame_reader.hpp"
 
@@ -27,7 +28,6 @@ namespace stomp {
 		static int get_send_buffer_pre_padding();
 		static int get_send_buffer_post_padding();
 		static int get_timer_period_us();
-
 
 		class MessageVectorBuffer : public MessageBuffer {
 		private:
@@ -78,6 +78,17 @@ namespace stomp {
 		std::mutex send_queue_lock_;
 		std::deque<std::unique_ptr<MessageBuffer> > send_queue_data_;
 
+		std::mutex id_lock_;
+		int64_t id_tx_count_;
+		int64_t id_sub_count_;
+
+		int heartbeat_cx_;
+		int heartbeat_cy_;
+		int heartbeat_sx_;
+		int heartbeat_sy_;
+		int heartbeat_send_interval_;
+		std::chrono::steady_clock::time_point heartbeat_prev_ticks_;
+
 		LibwebsocketsClient(const LibwebsocketsClient& o) { assert(false); }
 
 		void pushSendData(std::unique_ptr<MessageBuffer> & item);
@@ -98,6 +109,12 @@ namespace stomp {
 		void timerProc();
 
 		State state() const override;
+
+		int sendFrame(Frame* frame) override;
+		int sendCommand(command::Base* item) override;
+
+		std::string generateSubscribeId() override;
+		std::string generateTransactionId() override;
 	};
 
 }

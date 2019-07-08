@@ -106,7 +106,14 @@ namespace stomp {
 							}
 						}
 						else {
-							reading_frame_.reset(new Frame(line_buffer_));
+							if (line_buffer_.empty()) {
+								// Heartbeat
+								printf("HEARTBEAT RECEVIVE\n");
+								reset();
+							}
+							else {
+								reading_frame_.reset(new Frame(line_buffer_));
+							}
 						}
 					} while (false);
 					line_buffer_.clear();

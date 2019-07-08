@@ -22,7 +22,10 @@ namespace stomp {
 		Frame::Commands::CONNECT("CONNECT"),
 		Frame::Commands::CONNECTED("CONNECTED"),
 		Frame::Commands::SUBSCRIBE("SUBSCRIBE"),
-		Frame::Commands::MESSAGE("MESSAGE")
+		Frame::Commands::UNSUBSCRIBE("UNSUBSCRIBE"),
+		Frame::Commands::ABORT("ABORT"),
+		Frame::Commands::MESSAGE("MESSAGE"),
+		Frame::Commands::SEND("SEND")
 		;
 
 	const std::string

@@ -8,14 +8,32 @@
  */
 #include "lws_client.hpp"
 
+#include <chrono>
+
 #if defined(HAS_LIBWEBSOCKETS) && HAS_LIBWEBSOCKETS
 
 #include "frame.hpp"
 
+#include "command/connect.hpp"
+
+#if !defined(_MSC_VER) || !_MSC_VER
+#define strtok_s strtok_r
+#endif
+
 namespace stomp {
 
 	LibwebsocketsClient::LibwebsocketsClient(bool use_lws_timer)
-		: Client(), use_lws_timer_(use_lws_timer), wsi_(NULL)
+		: Client(),
+		use_lws_timer_(use_lws_timer),
+		wsi_(NULL),
+		state_(State::DISCONNECTED),
+		id_tx_count_(0),
+		id_sub_count_(0),
+		heartbeat_cx_(10000),
+		heartbeat_cy_(10000),
+		heartbeat_sx_(0),
+		heartbeat_sy_(0),
+		heartbeat_send_interval_(0)
 	{
 	}
 
@@ -59,6 +77,7 @@ namespace stomp {
 			break;
 
 		case LWS_CALLBACK_CLIENT_RECEIVE_PONG:
+			lwsl_hexdump(in, len);
 			break;
 
 		case LWS_CALLBACK_TIMER:
@@ -78,8 +97,29 @@ namespace stomp {
 
 	void LibwebsocketsClient::timerProc()
 	{
-		std::unique_lock<std::mutex> lock(send_queue_lock_);
-		if(!send_queue_data_.empty())
+		bool sendable;
+
+		if (heartbeat_send_interval_ > 0 && state_ == State::CONNECTED) {
+			std::chrono::steady_clock::time_point cur = std::chrono::steady_clock::now();
+			std::chrono::steady_clock::duration diff = cur - heartbeat_prev_ticks_;
+
+			if (diff >= std::chrono::milliseconds(heartbeat_send_interval_))
+			{
+				// Send heartbeat
+				std::unique_ptr<MessageVectorBuffer> item(new MessageVectorBuffer());
+				std::unique_ptr<MessageBuffer> temp;
+				item->writePrepare().push_back('\n');
+				item->writeDone();
+				temp = std::move(item);
+				pushSendData(temp);
+				heartbeat_prev_ticks_ = cur;
+			}
+		}
+
+		send_queue_lock_.lock();
+		sendable = send_queue_data_.empty();
+		send_queue_lock_.unlock();
+		if (!sendable)
 			lws_callback_on_writable(wsi_);
 	}
 
@@ -94,11 +134,8 @@ namespace stomp {
 	{
 		std::unique_ptr<MessageVectorBuffer> item(new MessageVectorBuffer());
 		std::unique_ptr<MessageBuffer> temp;
-		Frame frame(Frame::Commands::CONNECT);
-		frame
-			.header(Frame::Headers::ACCEPT_VERSION, "1.1,1.0")
-			.header(Frame::Headers::HEART_BEAT, "10000,10000")
-			.make_payload_append(item->writePrepare());
+		command::Connect connect(this);
+		connect.frame()->make_payload_append(item->writePrepare());
 		item->writeDone();
 		temp = std::move(item);
 		pushSendData(temp);
@@ -137,7 +174,55 @@ namespace stomp {
 
 	int LibwebsocketsClient::onFrameConnected(Frame* frame)
 	{
+		if(frame->has_header(Frame::Headers::HEART_BEAT)) {
+			std::string heart_beat_raw = frame->header(Frame::Headers::HEART_BEAT);
+			char *sx, *sy = NULL;
+			if (!heart_beat_raw.empty()) {
+				sx = strtok_s(&heart_beat_raw[0], ",", &sy);
+				if (sx && sy) {
+					heartbeat_sx_ = atoi(sx);
+					heartbeat_sy_ = atoi(sy);
+				}
+			}
+		}
+		heartbeat_send_interval_ = (heartbeat_cx_ > heartbeat_sy_) ? heartbeat_cx_ : heartbeat_sy_;
+
+		heartbeat_prev_ticks_ = std::chrono::steady_clock::now();
+		state_ = State::CONNECTED;
+
 		return onConnected(frame);
+	}
+
+	int LibwebsocketsClient::sendFrame(Frame* frame)
+	{
+		std::unique_ptr<MessageVectorBuffer> buffer(new MessageVectorBuffer());
+		frame->make_payload_append(buffer->writePrepare());
+		buffer->writeDone();
+		send_queue_lock_.lock();
+		send_queue_data_.push_back(std::move(buffer));
+		send_queue_lock_.unlock();
+		return 0;
+	}
+
+	int LibwebsocketsClient::sendCommand(command::Base* item)
+	{
+		return sendFrame(item->frame());
+	}
+
+	std::string LibwebsocketsClient::generateSubscribeId()
+	{
+		std::unique_lock<std::mutex> lock{ id_lock_ };
+		char buf[128];
+		snprintf(buf, sizeof(buf), "sub-%llx", ++id_sub_count_);
+		return buf;
+	}
+
+	std::string LibwebsocketsClient::generateTransactionId()
+	{
+		std::unique_lock<std::mutex> lock{ id_lock_ };
+		char buf[128];
+		snprintf(buf, sizeof(buf), "tx-%llx", ++id_tx_count_);
+		return buf;
 	}
 
 	Client::State LibwebsocketsClient::state() const {

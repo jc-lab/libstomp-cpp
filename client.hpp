@@ -11,6 +11,7 @@
 #include <assert.h>
 
 #include "frame.hpp"
+#include "command/base.hpp"
 
 namespace stomp {
 
@@ -37,6 +38,13 @@ namespace stomp {
 		virtual int onConnected(Frame* frame) { return 0; }
 		virtual int onMessage(Frame* frame) { return 0; }
 		virtual int onClosed() { return 0; }
+
+		virtual int sendFrame(Frame *frame) = 0;
+
+		virtual int sendCommand(command::Base* item) = 0;
+
+		virtual std::string generateSubscribeId() = 0;
+		virtual std::string generateTransactionId() = 0;
 	};
 
 }
