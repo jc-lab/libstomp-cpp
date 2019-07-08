@@ -7,7 +7,7 @@ stomp protocol version 1.0/1.1 implementation by C++11.
 ## Requirement
 
 - C++11
-- libwebsockets (Optional)
+- libwebsockets (Optional, Preprocessing Definition HAS_LIBWEBSOCKETS Required)
 
 
 
