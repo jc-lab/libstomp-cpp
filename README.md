@@ -25,21 +25,22 @@ stomp protocol version 1.0/1.1 implementation by C++11.
 
 ## Support feature and command
 
-| type    | name                         | support |
-| ------- | ---------------------------- | ------- |
-| Feature | Heart-beat send              | yes     |
-| Feature | Heart-beat receive and check | not yet |
-| Command | CONNECT / CONNECTED          | yes     |
-| Command | BEGIN                        | yes     |
-| Command | COMMIT                       | yes     |
-| Command | ABORT                        | yes     |
-| Command | ACK                          | yes     |
-| Command | NACK                         | yes     |
-| Command | SEND                         | yes     |
-| Command | SUBSCRIBE                    | yes     |
-| Command | UNSUBSCRIBE                  | yes     |
-| Command | DISCONNECT                   | yes     |
-| Command | MESSAGE                      | yes     |
+| type    | name                                  | support |
+| ------- | ------------------------------------- | ------- |
+| Feature | Heart-beat send                       | yes     |
+| Feature | Heart-beat receive                    | yes     |
+| Feature | Auto disconnect by Heart-beat timeout | not yet |
+| Command | CONNECT / CONNECTED                   | yes     |
+| Command | BEGIN                                 | yes     |
+| Command | COMMIT                                | yes     |
+| Command | ABORT                                 | yes     |
+| Command | ACK                                   | yes     |
+| Command | NACK                                  | yes     |
+| Command | SEND                                  | yes     |
+| Command | SUBSCRIBE                             | yes     |
+| Command | UNSUBSCRIBE                           | yes     |
+| Command | DISCONNECT                            | yes     |
+| Command | MESSAGE                               | yes     |
 
 
 
