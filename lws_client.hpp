@@ -21,6 +21,10 @@
 
 #include "frame_reader.hpp"
 
+#ifdef _DEBUG
+#include <assert.h>
+#endif
+
 namespace stomp {
 
 	class LibwebsocketsClient : public Client {
@@ -89,7 +93,9 @@ namespace stomp {
 		int heartbeat_send_interval_;
 		std::chrono::steady_clock::time_point heartbeat_prev_ticks_;
 
+#ifdef _DEBUG
 		LibwebsocketsClient(const LibwebsocketsClient& o) { assert(false); }
+#endif
 
 		void pushSendData(std::unique_ptr<MessageBuffer> & item);
 		void sendConnectFrame();

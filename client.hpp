@@ -8,8 +8,6 @@
  */
 #pragma once
 
-#include <assert.h>
-
 #include "frame.hpp"
 #include "command/base.hpp"
 

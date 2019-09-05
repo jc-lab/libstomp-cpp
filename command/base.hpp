@@ -8,7 +8,9 @@
  */
 #pragma once
 
+#ifdef _DEBUG
 #include <assert.h>
+#endif
 
 #include "../frame.hpp"
 
@@ -18,7 +20,9 @@ namespace stomp {
 
 		class Base {
 		private:
+#ifdef _DEBUG
 			Base(const Base& o) { assert(false); }
+#endif
 
 		protected:
 			Frame frame_;
